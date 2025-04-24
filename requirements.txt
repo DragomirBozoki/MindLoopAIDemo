@@ -1,0 +1,9 @@
+streamlit
+llama-index
+langchain
+wget
+pandas
+sentence-transformers
+torch
+llama-cpp-python
+huggingface_hub
