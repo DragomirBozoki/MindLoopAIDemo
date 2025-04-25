@@ -7,3 +7,5 @@ llama-cpp-python==0.2.27
 wget==3.2
 langchain==0.1.14
 llama-index==0.10.20
+torchvision==0.17.2
+setuptools>=68.0.0
