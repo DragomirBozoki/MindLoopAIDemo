@@ -1,9 +1,9 @@
-streamlit
-llama-index
-langchain
-wget
+streamlit==1.31.1
+torch==2.1.0
+sentence-transformers==2.2.2
 pandas
-sentence-transformers
-torch
+wget
 llama-cpp-python
 huggingface_hub
+langchain
+llama-index
