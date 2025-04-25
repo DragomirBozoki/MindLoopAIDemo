@@ -18,8 +18,8 @@ def load_llama():
         n_gpu_layers=1,
         n_ctx=3900,
         n_threads=4,
-        temperature=0.3,
-        max_tokens=512,
+        temperature=0.25,
+        max_tokens=2048,
         verbose=False
     )
 
