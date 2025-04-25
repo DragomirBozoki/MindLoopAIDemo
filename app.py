@@ -19,7 +19,7 @@ def load_llama():
         n_ctx=3900,
         n_threads=4,
         temperature=0.25,
-        max_tokens=2048,
+        max_tokens=1024,
         verbose=False
     )
 
