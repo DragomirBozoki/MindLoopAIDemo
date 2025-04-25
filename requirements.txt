@@ -1,6 +1,6 @@
 streamlit==1.31.1
 pandas==2.2.2
-torch==2.1.0
+torch==2.2.2
 sentence-transformers==2.2.2
 huggingface_hub==0.22.2
 llama-cpp-python==0.2.27
