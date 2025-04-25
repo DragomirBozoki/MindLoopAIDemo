@@ -18,7 +18,7 @@ def load_llama():
         n_threads=4,
         temperature=0.3,
         max_tokens=512,
-        verbose=True
+        verbose=False
     )
 llm = load_llama()
 
@@ -38,7 +38,7 @@ corpus_embeddings = embedder.encode(questions, convert_to_tensor=True)
 st.markdown("<h1 style='text-align: center; color: white;'>MindLoop Chatbot</h1>", unsafe_allow_html=True)
 
 # ⬇️ Sidebar
-if st.sidebar.button("Clear Chat"):
+if st.sidebar.button("🗑️ Clear Chat"):
     st.session_state.chat = []
 
 if "chat" not in st.session_state:
@@ -53,14 +53,13 @@ def retrieve_context(user_input):
 
 # ⬇️ Generisanje odgovora pomoću LLaMA
 def generate_llama(user_input, context):
-    prompt = f"""Answer the user's question **only** using the context below. Be direct and clear.
+    prompt = f"""You are a helpful assistant. Use ONLY the context to answer the question. Be short and clear.
 
 Context: "{context}"
 Question: "{user_input}"
 Answer:"""
     output = llm(prompt, stop=["</s>"])
     return output["choices"][0]["text"].strip()
-
 
 # ⬇️ Renderovanje poruka (user/bot)
 def render_msg(role, msg):
@@ -75,30 +74,17 @@ def render_msg(role, msg):
     </div>
     """, unsafe_allow_html=True)
 
-# ⬇️ Glavna logika četa
+# ⬇️ Re-render prethodnih poruka (uvek pre nove logike)
+for role, msg in st.session_state.chat:
+    render_msg(role, msg)
+
+# ⬇️ Nova korisnička poruka
 if (user_input := st.chat_input("💬 Ask something...")):
     st.session_state.chat.append(("user", user_input))
-    render_msg("user", user_input)
     with st.spinner("🤖 Thinking..."):
         context = retrieve_context(user_input)
         answer = generate_llama(user_input, context)
-        placeholder = st.empty()
-        shown = ""
-        for c in answer:
-            shown += c
-            placeholder.markdown(f"""
-            <div style='display: flex; justify-content: flex-end; margin: 10px 0;'>
-              <div style='background-color: #3a3a3a; color: white; padding: 12px 16px; border-radius: 14px; max-width: 75%; font-family: sans-serif;'>
-                {shown}
-              </div>
-            </div>
-            """, unsafe_allow_html=True)
-            time.sleep(0.015)
         st.session_state.chat.append(("bot", answer))
-
-# ⬇️ Re-render prethodnih poruka
-for role, msg in st.session_state.chat:
-    render_msg(role, msg)
 
 # ⬇️ Auto scroll to bottom
 st.markdown("<script>window.scrollTo(0, document.body.scrollHeight);</script>", unsafe_allow_html=True)
