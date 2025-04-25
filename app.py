@@ -38,7 +38,7 @@ corpus_embeddings = embedder.encode(questions, convert_to_tensor=True)
 st.markdown("<h1 style='text-align: center; color: white;'>MindLoop Chatbot</h1>", unsafe_allow_html=True)
 
 # ⬇️ Sidebar
-if st.sidebar.button("🗑️ Clear Chat"):
+if st.sidebar.button("Clear Chat"):
     st.session_state.chat = []
 
 if "chat" not in st.session_state:
@@ -76,7 +76,7 @@ def render_msg(role, msg):
     """, unsafe_allow_html=True)
 
 # ⬇️ Glavna logika četa
-if user_input := st.chat_input("💬 Ask something..."):
+if (user_input := st.chat_input("💬 Ask something...")):
     st.session_state.chat.append(("user", user_input))
     render_msg("user", user_input)
     with st.spinner("🤖 Thinking..."):
