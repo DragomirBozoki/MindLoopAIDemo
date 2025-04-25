@@ -9,6 +9,7 @@ import os
 # ⬛ Konfiguracija stranice
 st.set_page_config(page_title="MindLoop Chatbot", layout="centered")
 
+# ⬇️ Učitavanje LLaMA modela
 @st.cache_resource
 def load_llama():
     model_dir = snapshot_download(repo_id="dragomir01/chatbotweb")
@@ -30,10 +31,11 @@ df = pd.read_csv("faq/ecommerce_en.csv")
 questions = df["question"].tolist()
 answers = df["answer"].tolist()
 
-# ⬇️ Učitavanje embeddera
+# ⬇️ SentenceTransformer embedder
 @st.cache_resource
 def load_embedder():
     return SentenceTransformer("all-MiniLM-L6-v2")
+
 embedder = load_embedder()
 corpus_embeddings = embedder.encode(questions, convert_to_tensor=True)
 
@@ -47,7 +49,7 @@ if st.sidebar.button("🗑️ Clear Chat"):
 if "chat" not in st.session_state:
     st.session_state.chat = []
 
-# ⬇️ RAG funkcija sa scoringom
+# ⬇️ RAG funkcija
 def retrieve_context(user_input):
     user_emb = embedder.encode(user_input, convert_to_tensor=True)
     scores = util.pytorch_cos_sim(user_emb, corpus_embeddings)[0]
@@ -55,7 +57,7 @@ def retrieve_context(user_input):
     best_score = float(scores[best_idx])
     return answers[best_idx], best_score
 
-# ⬇️ LLaMA generacija
+# ⬇️ Generacija odgovora
 def generate_llama(prompt):
     output = llm(prompt, stop=["</s>"])
     return output["choices"][0]["text"].strip()
@@ -73,29 +75,30 @@ def render_msg(role, msg):
     </div>
     """, unsafe_allow_html=True)
 
-# ⬇️ Render svih prethodnih poruka
+# ⬇️ Render prethodnih poruka
 for role, msg in st.session_state.chat:
     render_msg(role, msg)
 
 # ⬇️ Chat logika
 if (user_input := st.chat_input("💬 Ask something...")):
     st.session_state.chat.append(("user", user_input))
+    render_msg("user", user_input)
+
     with st.spinner("🤖 Thinking..."):
         context, score = retrieve_context(user_input)
 
         if score < 0.6:
-            # Fallback na LLM znanje
             prompt = f"You are a helpful assistant. Answer the following question using your own knowledge.\n\nQuestion: {user_input}\nAnswer:"
         else:
-            # RAG prompt
             prompt = f"""You are a helpful assistant. Use ONLY the context to answer the question. Be short and clear.
 
 Context: "{context}"
 Question: "{user_input}"
 Answer:"""
-        
+
         answer = generate_llama(prompt)
         st.session_state.chat.append(("bot", answer))
+        render_msg("bot", answer)
 
 # ⬇️ Auto scroll
 st.markdown("<script>window.scrollTo(0, document.body.scrollHeight);</script>", unsafe_allow_html=True)
