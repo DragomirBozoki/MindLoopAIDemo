@@ -1,20 +1,18 @@
 import streamlit as st
 import pandas as pd
-# dummy change to trigger redeploy
-
 import time
 from sentence_transformers import SentenceTransformer, util
 from huggingface_hub import snapshot_download
 from llama_cpp import Llama
 import os
-# ⬛ Konfiguracija stranice – MORA biti prva Streamlit komanda
+
+# ⬛ Konfiguracija stranice
 st.set_page_config(page_title="MindLoop Chatbot", layout="centered")
 
 @st.cache_resource
 def load_llama():
     model_dir = snapshot_download(repo_id="dragomir01/chatbotweb")
     model_path = os.path.join(model_dir, "llama-2-7b-chat.Q2_K.gguf")
-    
     return Llama(
         model_path=model_path,
         n_gpu_layers=1,
@@ -32,7 +30,7 @@ df = pd.read_csv("faq/ecommerce_en.csv")
 questions = df["question"].tolist()
 answers = df["answer"].tolist()
 
-# ⬇️ SentenceTransformer embedder
+# ⬇️ Učitavanje embeddera
 @st.cache_resource
 def load_embedder():
     return SentenceTransformer("all-MiniLM-L6-v2")
@@ -49,24 +47,20 @@ if st.sidebar.button("🗑️ Clear Chat"):
 if "chat" not in st.session_state:
     st.session_state.chat = []
 
-# ⬇️ Funkcija za retrieval konteksta (RAG)
+# ⬇️ RAG funkcija sa scoringom
 def retrieve_context(user_input):
     user_emb = embedder.encode(user_input, convert_to_tensor=True)
     scores = util.pytorch_cos_sim(user_emb, corpus_embeddings)[0]
     best_idx = int(scores.argmax())
-    return answers[best_idx]
+    best_score = float(scores[best_idx])
+    return answers[best_idx], best_score
 
-# ⬇️ Generisanje odgovora pomoću LLaMA
-def generate_llama(user_input, context):
-    prompt = f"""You are a helpful assistant. Use ONLY the context to answer the question. Be short and clear.
-
-Context: "{context}"
-Question: "{user_input}"
-Answer:"""
+# ⬇️ LLaMA generacija
+def generate_llama(prompt):
     output = llm(prompt, stop=["</s>"])
     return output["choices"][0]["text"].strip()
 
-# ⬇️ Renderovanje poruka (user/bot)
+# ⬇️ Render poruka
 def render_msg(role, msg):
     align = "flex-start" if role == "user" else "flex-end"
     bg = "#2a2a2a" if role == "user" else "#3a3a3a"
@@ -79,22 +73,34 @@ def render_msg(role, msg):
     </div>
     """, unsafe_allow_html=True)
 
-# ⬇️ Re-render prethodnih poruka (uvek pre nove logike)
+# ⬇️ Render svih prethodnih poruka
 for role, msg in st.session_state.chat:
     render_msg(role, msg)
 
-# ⬇️ Nova korisnička poruka
+# ⬇️ Chat logika
 if (user_input := st.chat_input("💬 Ask something...")):
     st.session_state.chat.append(("user", user_input))
     with st.spinner("🤖 Thinking..."):
-        context = retrieve_context(user_input)
-        answer = generate_llama(user_input, context)
+        context, score = retrieve_context(user_input)
+
+        if score < 0.6:
+            # Fallback na LLM znanje
+            prompt = f"You are a helpful assistant. Answer the following question using your own knowledge.\n\nQuestion: {user_input}\nAnswer:"
+        else:
+            # RAG prompt
+            prompt = f"""You are a helpful assistant. Use ONLY the context to answer the question. Be short and clear.
+
+Context: "{context}"
+Question: "{user_input}"
+Answer:"""
+        
+        answer = generate_llama(prompt)
         st.session_state.chat.append(("bot", answer))
 
-# ⬇️ Auto scroll to bottom
+# ⬇️ Auto scroll
 st.markdown("<script>window.scrollTo(0, document.body.scrollHeight);</script>", unsafe_allow_html=True)
 
-# ⬇️ Tamna pozadina cele stranice
+# ⬇️ Tamna tema
 st.markdown("""
 <style>
     body {
