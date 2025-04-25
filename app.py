@@ -6,15 +6,17 @@ import time
 from sentence_transformers import SentenceTransformer, util
 from huggingface_hub import snapshot_download
 from llama_cpp import Llama
-
+import os
 # ⬛ Konfiguracija stranice – MORA biti prva Streamlit komanda
 st.set_page_config(page_title="MindLoop Chatbot", layout="centered")
 
-# ⬇️ Učitavanje LLaMA modela
 @st.cache_resource
 def load_llama():
+    model_dir = snapshot_download(repo_id="dragomir01/chatbotweb")
+    model_path = os.path.join(model_dir, "llama-2-7b-chat.Q2_K.gguf")
+    
     return Llama(
-        model_path='models/llama-2-7b-chat.Q2_K.gguf',
+        model_path=model_path,
         n_gpu_layers=1,
         n_ctx=3900,
         n_threads=4,
@@ -22,6 +24,7 @@ def load_llama():
         max_tokens=512,
         verbose=False
     )
+
 llm = load_llama()
 
 # ⬇️ Učitavanje FAQ baze
